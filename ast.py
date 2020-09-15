@@ -267,6 +267,17 @@ class LoopNode(Node):
 
         return ll.Constant(i64, 0)
 
+class ReturnNode(Node):
+    def __init__(self, val):
+        self.val = val
+
+    def __repr__(self):
+        return f"(return {self.val})"
+
+    def genCode(self):
+        val = self.val.genCode()
+        builder.ret(val)
+
 
 
 class NoneNode(Node):
