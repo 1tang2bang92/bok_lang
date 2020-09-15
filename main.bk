@@ -1,0 +1,33 @@
+extern fn print(i64)
+extern fn input()
+
+fn sum(a, b) {
+    a + b
+}
+
+fn fact(a) {
+    let result = 1
+    loop a {
+        result = result * a
+        a = a - 1
+    }
+    result
+}
+
+fn abs(x) {
+    if (x < 0) {
+        -x
+    } else {
+        x
+    }
+}
+
+fn main() {
+    loop {
+        let in = input()
+        let result = abs(in)
+        print(result)
+        let result = fact(in)
+        print(result)
+    }
+}

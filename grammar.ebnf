@@ -1,0 +1,19 @@
+<name_type> ::= <identifier>(":" <type>)?
+
+<let> ::= "let" <name_type> ("=" <expression>)?
+
+<fn> ::= "fn" <identifier> "("<name_type>(","<name_type>)*)?")"("->"<type>)? "{"<sentence>"}"
+
+<sentence> ::= <call>
+|<loop>
+|<if>
+|<return>
+|<continue>
+|<break>
+|<let>
+|<assign>
+|<fn>
+|<yield>
+|<>
+
+<assign> ::= <>
