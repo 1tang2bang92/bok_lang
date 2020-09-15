@@ -5,8 +5,8 @@ context = llvm.create_context()
 module = ll.Module("Entry")
 builder = ll.IRBuilder()
 
-i1 = ll.IntType(32)
-i8 = ll.IntType(32)
+i1  = ll.IntType(32)
+i8  = ll.IntType(32)
 i16 = ll.IntType(32)
 i32 = ll.IntType(32)
 i64 = ll.IntType(64)
@@ -38,7 +38,7 @@ class NumNode(Node):
 
 class AssignNode(Node):
     def __init__(self, id, val):
-        self.id = id
+        self.id  = id
         self.val = val
 
     def __repr__(self):
@@ -51,21 +51,32 @@ class AssignNode(Node):
         return val
 
 class VarNode(Node):
-    def __init__(self, id, val):
-        self.id = id
-        self.val = val
+    def __init__(self, id, type, val):
+        self.id   = id
+        self.type = type
+        self.val  = val
 
     def __repr__(self):
-        return f"(Var {self.id} {self.val})"
+        return f"(Var {self.id} {self.type} {self.val})"
 
     def genCode(self):
         block = builder.block
         builder.position_at_end(block)
-        var = builder.alloca(i64, name=self.id)
-        val = self.val.genCode()
-        builder.store(val, var)
-        namedValues[self.id] = var
-        return val
+        if self.type == None:
+            pass
+        elif self.type == 'i64':
+            var = builder.alloca(i64, name=self.id)
+            val = self.val.genCode()
+            builder.store(val, var)
+            namedValues[self.id] = var
+            return val
+        elif self.type == '*i64':
+            val = self.val.genCode()
+            var = builder.alloca(ll.PointerType(val), name=self.id)
+            builder.store(val, var)
+            namedValues[self.id] = var
+            return val
+        
 
 class ValNode(Node):
     def __init__(self, id):
@@ -78,9 +89,18 @@ class ValNode(Node):
         var = namedValues[self.id]
         return builder.load(var, name='loadtemp')
 
+    def getRef(self):
+        return namedValues[self.id]
+
+    def getDeref(self):
+        var = namedValues[self.id]
+        var = builder.load(var, name='loadtemp')
+        return builder.load(var, name='loadtemp')
+
+
 class UnaryNode(Node):
     def __init__(self, op, node1):
-        self.op = op
+        self.op    = op
         self.node1 = node1
 
     def __repr__(self):
@@ -90,10 +110,14 @@ class UnaryNode(Node):
         if self.op == '-':
             rhs = self.node1.genCode()
             return builder.neg(rhs)
+        elif self.op == '&':
+            return self.node1.getRef()
+        elif self.op == '*':
+            return self.node1.getDeref()
 
 class BinNode(Node):
     def __init__(self, op, node1, node2):
-        self.op = op
+        self.op    = op
         self.node1 = node1
         self.node2 = node2
 
@@ -149,7 +173,7 @@ class StatementNode(Node):
 
 class ExternFunctionNode(Node):
     def __init__(self, id, params):
-        self.id = id
+        self.id     = id
         self.params = params
 
     def __repr__(self):
@@ -161,9 +185,9 @@ class ExternFunctionNode(Node):
 
 class FunctionNode(Node):
     def __init__(self, id, params, body):
-        self.id = id
+        self.id     = id
         self.params = params
-        self.body = body
+        self.body   = body
 
     def __repr__(self):
         return f"(function {self.id} {self.params} {self.body})"
@@ -185,7 +209,7 @@ class FunctionNode(Node):
 
 class CallNode(Node):
     def __init__(self, id, args):
-        self.id = id
+        self.id   = id
         self.args = args
 
     def __repr__(self):

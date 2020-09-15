@@ -17,6 +17,10 @@ def generate():
     
     strmod = str(module)
 
+    file = open('target/output.ll','w')
+    file.write(strmod)
+    file.close()
+
     llinput = llvm.parse_assembly(i.ir)
     llprint = llvm.parse_assembly(p.ir)
     llmod = llvm.parse_assembly(strmod)
@@ -51,10 +55,6 @@ def generate():
     # bytes = targetMachine.emit_object(llmod)
     # file.write(bytes)
     # file.close()
-
-    file = open('target/output.ll','w')
-    file.write(strmod)
-    file.close()
 
     file = open('target/output.o.ll','w')
     file.write(str(llmod))

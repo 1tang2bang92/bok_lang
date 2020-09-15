@@ -9,16 +9,16 @@ reserved = {
     'let'     : 'LET',
     'extern'  : 'EXTERN',
     'return'  : 'RETURN',
-    }
+}
 
 #token
 tokens = (
     'NUMBER',
     'ADD','MIN','MUL','DIV','ASSIGN', 'EQ',
-    'NE', 'GT', 'LT',
+    'NE', 'GT', 'LT', 'REF',
     'LPAREN','RPAREN', 'LBRACE', 'RBRACE',
-    'ID', 'COMMA'
-    ) + tuple(reserved.values())
+    'ID', 'COMMA', 'COLON'
+) + tuple(reserved.values())
 
 # Tokens
 t_ADD     = r'\+'
@@ -35,6 +35,8 @@ t_NE      = r'!='
 t_GT      = r'>'
 t_LT      = r'<'
 t_COMMA   = r'\,'
+t_REF     = r'\&'
+t_COLON   = r'\:'
 
 # Ignored characters
 t_ignore = " \t"

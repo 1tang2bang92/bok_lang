@@ -4,11 +4,12 @@ from ast import *
 
 # Precedence rules for the arithmetic operators
 precedence = (
-    ('right', 'ASSIGN'),
-    ('left', 'EQ', 'NE', 'GT', 'LT'),
+    ('right','ASSIGN'),
+    ('left','EQ','NE','GT','LT'),
     ('left','ADD','MIN'),
     ('left','MUL','DIV'),
     ('right','MIN'),
+    ('right','REF','DEREF')
 )
 
 ### block
@@ -103,9 +104,25 @@ def p_expression_binop(p):
     '''
     p[0] = BinNode(p[2], p[1], p[3])
 
-def p_expression_let_assign(p):
+def p_expression_let_assign_1(p):
     'expression : LET ID ASSIGN expression'
-    p[0] = VarNode(p[2], p[4])
+    p[0] = VarNode(p[2], None, p[4])
+
+def p_expression_let_assign_2(p):
+    'expression : LET ID COLON ID ASSIGN expression'
+    p[0] = VarNode(p[2], p[4], p[6])
+
+def p_expression_let_assign_3(p):
+    'expression : LET ID COLON MUL ID ASSIGN expression'
+    p[0] = VarNode(p[2], '*' + p[5], p[7])
+
+def p_expression_ref(p):
+    'expression : REF ID'
+    p[0] = UnaryNode(p[1], ValNode(p[2]))
+
+def p_expression_deref(p):
+    'expression : DEREF ID'
+    p[0] = UnaryNode(p[1], ValNode(p[2]))
 
 def p_expression_loop_1(p):
     'expression : LOOP statement'
@@ -122,7 +139,7 @@ def p_expression_assign(p):
 def p_expression_uminus(p):
     'expression : MIN expression'
     # 'expression : MIN expression %prec UMINUS'
-    p[0] = UnaryNode('-', p[2])
+    p[0] = UnaryNode(p[1], p[2])
 
 def p_expression_group(p):
     'expression : LPAREN expression RPAREN'
