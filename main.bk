@@ -1,7 +1,14 @@
 extern fn print(i64)
 extern fn input()
 
-fn main() {
-    let a: i64 = 10
-    let a: * = &a
+fn add(x: i64, y: i64) -> i64 {
+    x + y
+}
+
+fn main() -> i32 {
+    let a: i64 = input()
+    let b: i64 = input()
+    let c: i64 = add(a, b)
+    print(c)
+    0
 }

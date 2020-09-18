@@ -8,8 +8,9 @@ precedence = (
     ('left','EQ','NE','GT','LT'),
     ('left','ADD','MIN'),
     ('left','MUL','DIV'),
+    ('left','AS'),
     ('right','MIN'),
-    ('right','REF','DEREF')
+    ('right','REF','MUL')
 )
 
 ### block
@@ -62,13 +63,32 @@ def p_statement_list_2(p):
     p[1].append(p[2])
     p[0] = p[1]
 
+def p_expression_type(p):
+    '''
+    type : vartype
+         | pointertype
+    '''
+    p[0] = p[1]
+
+def p_expression_vartype(p):
+    'vartype : ID'
+    p[0] = VarNode(None, p[1], None)
+
+def p_expression_pointertype(p):
+    'pointertype : asterisks ID'
+    p[0] = PointerVarNode(None, p[1], p[2], None)
+
 def p_statement_extern_function(p):
     'expression : EXTERN FN ID prototype'
     p[0] = ExternFunctionNode(p[3], p[4])
 
-def p_statement_function(p):
+def p_statement_function_1(p):
     'expression : FN ID prototype statement'
-    p[0] = FunctionNode(p[2], p[3], p[4])
+    p[0] = FunctionNode(p[2], p[3], None, p[4])
+
+def p_statement_function_2(p):
+    'expression : FN ID prototype RARROW type statement'
+    p[0] = FunctionNode(p[2], p[3], p[5], p[6])
 
 def p_statement_prototype_1(p):
     'prototype : LPAREN RPAREN'
@@ -88,8 +108,10 @@ def p_statement_parame_list(p):
     p[0] = p[1]
 
 def p_statement_param(p):
-    'param : ID'
-    p[0] = ValNode(p[1])
+    'param : ID COLON type'
+    param = p[3]
+    param.id = p[1]
+    p[0] = param
 
 def p_expression_binop(p):
     '''
@@ -104,6 +126,10 @@ def p_expression_binop(p):
     '''
     p[0] = BinNode(p[2], p[1], p[3])
 
+def p_expression_cast(p):
+    'expression : expression AS type'
+    p[0] = CastNode(p[1], p[3])
+
 def p_expression_let_assign_1(p):
     'expression : LET ID ASSIGN expression'
     p[0] = VarNode(p[2], None, p[4])
@@ -112,16 +138,24 @@ def p_expression_let_assign_2(p):
     'expression : LET ID COLON ID ASSIGN expression'
     p[0] = VarNode(p[2], p[4], p[6])
 
-def p_expression_let_assign_3(p):
-    'expression : LET ID COLON MUL ID ASSIGN expression'
-    p[0] = VarNode(p[2], '*' + p[5], p[7])
+def p_expression_let_pointer_assign_3(p):
+    'expression : LET ID COLON asterisks ID ASSIGN expression'
+    p[0] = PointerVarNode(p[2], p[4], p[5], p[7])
+
+def p_expression_asterisks_1(p):
+    'asterisks : MUL'
+    p[0] = ['*']
+
+def p_expression_asterisks_2(p):
+    'asterisks : asterisks MUL'
+    p[0] = p[1].append('*')
 
 def p_expression_ref(p):
     'expression : REF ID'
     p[0] = UnaryNode(p[1], ValNode(p[2]))
 
 def p_expression_deref(p):
-    'expression : DEREF ID'
+    'expression : MUL ID'
     p[0] = UnaryNode(p[1], ValNode(p[2]))
 
 def p_expression_loop_1(p):

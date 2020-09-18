@@ -5,14 +5,22 @@ context = llvm.create_context()
 module = ll.Module("Entry")
 builder = ll.IRBuilder()
 
-i1  = ll.IntType(32)
-i8  = ll.IntType(32)
-i16 = ll.IntType(32)
+i1  = ll.IntType(1)
+i8  = ll.IntType(8)
+i16 = ll.IntType(16)
 i32 = ll.IntType(32)
 i64 = ll.IntType(64)
 
 # lprint = ll.Function(module, ll.FunctionType(i64,[i64]), 'print')
 # lprint = ll.Function(module, ll.FunctionType(i64,[]), 'input')
+
+types = {
+    'i1'  : i1,
+    'i8'  : i8,
+    'i16' : i16,
+    'i32' : i32,
+    'i64' : i64,
+} 
 
 namedValues = {}
 
@@ -64,19 +72,52 @@ class VarNode(Node):
         builder.position_at_end(block)
         if self.type == None:
             pass
-        elif self.type == 'i64':
-            var = builder.alloca(i64, name=self.id)
+        elif len(list(filter(lambda x: x == self.type, types.keys()))) > 0:
+            varType = self.getType()
+            var = builder.alloca(varType, name=self.id)
             val = self.val.genCode()
+            val = builder.trunc(val, varType, 'trunctemp')
             builder.store(val, var)
             namedValues[self.id] = var
             return val
         elif self.type == '*i64':
             val = self.val.genCode()
-            var = builder.alloca(ll.PointerType(val), name=self.id)
+            print(repr(val))
+            p = ll.PointerType(i64)
+            var = builder.alloca(p, name=self.id)
+            namedValues[self.id] = var
+            builder.store(val, var)
+            return val
+    def getType(self):
+        return types[self.type]
+        
+class PointerVarNode(Node):
+    def __init__(self, id, asterisks, type, val):
+        self.id        = id
+        self.asterisks = asterisks
+        self.type      = type
+        self.val       = val
+
+    def __repr__(self):
+        return f"(PointerVar {self.id} {self.asterisks} {self.type} {self.val})"
+
+    def genCode(self):
+        block = builder.block
+        builder.position_at_end(block)
+        if self.type == None:
+            pass
+        elif len(list(filter(lambda x: x == self.type, types.keys()))) > 0:
+            varType = self.getType()
+            var = builder.alloca(varType, name=self.id)
+            val = self.val.genCode()
             builder.store(val, var)
             namedValues[self.id] = var
             return val
-        
+    def getType(self):
+        varType = types[self.type]
+        for _ in self.asterisks:
+            varType = ll.PointerType(varType)
+        return varType
 
 class ValNode(Node):
     def __init__(self, id):
@@ -87,15 +128,16 @@ class ValNode(Node):
 
     def genCode(self):
         var = namedValues[self.id]
-        return builder.load(var, name='loadtemp')
+        return builder.load(var, name=self.id)
 
     def getRef(self):
-        return namedValues[self.id]
+        var = namedValues[self.id]
+        return var
 
     def getDeref(self):
         var = namedValues[self.id]
-        var = builder.load(var, name='loadtemp')
-        return builder.load(var, name='loadtemp')
+        var = builder.load(var, name=self.id)
+        return builder.load(var, name=self.id)
 
 
 class UnaryNode(Node):
@@ -153,10 +195,18 @@ class BinNode(Node):
             lhs = self.node1.genCode()
             rhs = self.node2.genCode()
             return builder.icmp_signed('>', lhs, rhs, 'cmptemp')
+        elif self.op == '>=':
+            lhs = self.node1.genCode()
+            rhs = self.node2.genCode()
+            return builder.icmp_signed('>=', lhs, rhs, 'cmptemp')
         elif self.op == '<':
             lhs = self.node1.genCode()
             rhs = self.node2.genCode()
             return builder.icmp_signed('<', lhs, rhs, 'cmptemp')
+        elif self.op == '<=':
+            lhs = self.node1.genCode()
+            rhs = self.node2.genCode()
+            return builder.icmp_signed('<=', lhs, rhs, 'cmptemp')
 
 class StatementNode(Node):
     def __init__(self, list):
@@ -180,20 +230,22 @@ class ExternFunctionNode(Node):
         return f"(extern function {self.id} {self.params})"
 
     def genCode(self):
-        functionType = ll.FunctionType(i64, [i64] * len(self.params))
+        functionType = ll.FunctionType(i64, list(map(lambda x: x.getType(), self.params)))
         function = ll.Function(module, functionType, self.id)
 
 class FunctionNode(Node):
-    def __init__(self, id, params, body):
+    def __init__(self, id, params, ret, body):
         self.id     = id
         self.params = params
+        self.ret    = ret
         self.body   = body
 
     def __repr__(self):
-        return f"(function {self.id} {self.params} {self.body})"
+        return f"(function {self.id} {self.params} {self.ret} {self.body})"
 
     def genCode(self):
-        functionType = ll.FunctionType(i64, [i64] * len(self.params))
+        retType = self.ret.getType()
+        functionType = ll.FunctionType(retType, list(map(lambda x: x.getType(), self.params)))
         function = ll.Function(module, functionType, self.id)
         namedValues.clear()
         args = function.args
@@ -302,7 +354,19 @@ class ReturnNode(Node):
         val = self.val.genCode()
         builder.ret(val)
 
+class CastNode(Node):
+    def __init__(self, val, type):
+        self.val = val
+        self.type  = type
 
+    def __repr__(self):
+        return f"(cast {self.val} {self.type})"
+
+    def genCode(self):
+        varType = self.type.getType()
+        val = self.val.genCode()
+        val = builder.trunc(val, varType, 'trunctemp')
+        return val
 
 class NoneNode(Node):
     def __init__(self):

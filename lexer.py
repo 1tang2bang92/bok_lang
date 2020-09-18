@@ -7,6 +7,7 @@ reserved = {
     'loop'    : 'LOOP',
     'fn'      : 'FN',
     'let'     : 'LET',
+    'as'      : 'AS',
     'extern'  : 'EXTERN',
     'return'  : 'RETURN',
 }
@@ -15,25 +16,30 @@ reserved = {
 tokens = (
     'NUMBER',
     'ADD','MIN','MUL','DIV','ASSIGN', 'EQ',
-    'NE', 'GT', 'LT', 'REF',
+    'NE', 'GT', 'LT', 'REF', 'RARROW',
     'LPAREN','RPAREN', 'LBRACE', 'RBRACE',
     'ID', 'COMMA', 'COLON'
 ) + tuple(reserved.values())
 
 # Tokens
+t_ASSIGN  = r'='
 t_ADD     = r'\+'
 t_MIN     = r'-'
 t_MUL     = r'\*'
 t_DIV     = r'/'
-t_ASSIGN  = r'='
+
 t_LPAREN  = r'\('
 t_RPAREN  = r'\)'
 t_LBRACE  = r'\{'
 t_RBRACE  = r'\}'
+
 t_EQ      = r'=='
 t_NE      = r'!='
 t_GT      = r'>'
 t_LT      = r'<'
+
+t_RARROW   = r'->'
+
 t_COMMA   = r'\,'
 t_REF     = r'\&'
 t_COLON   = r'\:'
