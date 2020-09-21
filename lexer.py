@@ -16,7 +16,7 @@ reserved = {
 tokens = (
     'NUMBER',
     'ADD','MIN','MUL','DIV','ASSIGN', 'EQ',
-    'NE', 'GT', 'LT', 'REF', 'RARROW',
+    'NE', 'GT', 'LT', 'REF', 'DEREF', 'RARROW',
     'LPAREN','RPAREN', 'LBRACE', 'RBRACE',
     'ID', 'COMMA', 'COLON'
 ) + tuple(reserved.values())
@@ -42,6 +42,7 @@ t_RARROW   = r'->'
 
 t_COMMA   = r'\,'
 t_REF     = r'\&'
+t_DEREF     = r'\@'
 t_COLON   = r'\:'
 
 # Ignored characters

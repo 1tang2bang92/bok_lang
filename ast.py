@@ -222,15 +222,23 @@ class StatementNode(Node):
         return result
 
 class ExternFunctionNode(Node):
-    def __init__(self, id, params):
+    def __init__(self, id, params, ret):
         self.id     = id
         self.params = params
+        self.ret    = ret
 
     def __repr__(self):
-        return f"(extern function {self.id} {self.params})"
+        return f"(extern function {self.id} {self.params} {self.ret})"
 
     def genCode(self):
-        functionType = ll.FunctionType(i64, list(map(lambda x: x.getType(), self.params)))
+        retType = None
+
+        if self.ret == None:
+            retType = i64
+        else:
+            retType = self.ret.getType()
+
+        functionType = ll.FunctionType(retType, list(map(lambda x: x.getType(), self.params)))
         function = ll.Function(module, functionType, self.id)
 
 class FunctionNode(Node):
@@ -244,7 +252,13 @@ class FunctionNode(Node):
         return f"(function {self.id} {self.params} {self.ret} {self.body})"
 
     def genCode(self):
-        retType = self.ret.getType()
+        retType = None
+
+        if self.ret == None:
+            retType = i64
+        else:
+            retType = self.ret.getType()
+
         functionType = ll.FunctionType(retType, list(map(lambda x: x.getType(), self.params)))
         function = ll.Function(module, functionType, self.id)
         namedValues.clear()
@@ -253,11 +267,16 @@ class FunctionNode(Node):
         builder.position_at_end(functionBlock)
         for (x, y) in zip(args, self.params):
             x._set_name(y.id)
-            var = builder.alloca(i64, name=y.id)
+            var = builder.alloca(y.getType(), name=y.id)
             val = x
             builder.store(x, var)
             namedValues[y.id] = var
-        builder.ret(self.body.genCode())
+        
+        if self.ret == None:
+            self.body.genCode()
+            builder.ret(ll.Constant(i64, 0))
+        else:
+            builder.ret(self.body.genCode())
 
 class CallNode(Node):
     def __init__(self, id, args):
